@@ -1,4 +1,4 @@
-config = require('config')
+-- config = require('config')
 helpers = require('helpers')
 http = require('http_client')
 
@@ -26,7 +26,7 @@ function loop()
     print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'])
 
     -- At this point, data table should be ready to be sent
-    http.get(config.ts_address, config.oprog_port, config.report_url, data, function(status, data, message)
+    http.get(config.ts_address, config.ts_port, config.ts_url, data, function(status, data, message)
         if (data ~= '') then
             print(iteration, status, message)
             if (type(data) == 'string') then
@@ -73,17 +73,17 @@ function checkWIFI()
     end
 end
 
-print('Here is a client!')
+print('Starting as a cient')
 
--- Lets see if we are already connected by getting the IP
---ipAddr = wifi.sta.getip()
---if ((ipAddr == nil) or (ipAddr == '0.0.0.0')) then
---    -- We aren't connected, so let's connect
---    wifi.setmode(wifi.STATION)
---    wifi.sta.config(config.wifi_ssid, config.wifi_password)
---    print('Waiting for WiFi connection...')
---    tmr.alarm(0, 2500, 0, checkWIFI) -- Call checkWIFI 2.5S in the future.
---else
---    -- We are connected, so just run the launch code.
---    launch()
---end
+-- Check if are already connected by getting the IP
+ip_addr = wifi.sta.getip()
+if ((ip_addr == nil) or (ip_addr == '0.0.0.0')) then
+    -- Connect
+    wifi.setmode(wifi.STATION)
+    wifi.sta.config(config.wifi_ssid, config.wifi_password)
+    print('Waiting for WiFi connection...')
+    tmr.alarm(0, 2500, 0, checkWIFI) -- Call checkWIFI 2.5S in the future.
+else
+    -- Connected, launch the code
+    launch()
+end

@@ -1,13 +1,5 @@
 -- Globals
-
--- Default config
-config = {
-    wifi_ssid = 'open',
-    wifi_password = '',
-    ts_address = '144.212.80.11', -- api.thingspeak.com
-    ts_api_key = '',
-    loop_time = 30 -- seconds
-}
+config = {}
 node_name = 'node_' .. node.chipid()
 
 function file_exists(name)
@@ -21,7 +13,7 @@ end
 
 function start()
     if (file_exists('config.lua')) then
-        config = require('config.lua')
+        config = require('config')
         dofile('client.lua')
     else
         dofile('server.lua')
@@ -29,6 +21,6 @@ function start()
 end
 
 print('Starting up...\n')
-print('Run "tmr.stop(0)" within 5s to abort startup')
+print('Run "tmr.stop(0)" within 10s to abort startup')
 
-tmr.alarm(0, 5000, 0, start)
+tmr.alarm(0, 10000, 0, start)
