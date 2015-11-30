@@ -1,9 +1,13 @@
--- config = require('config')
 helpers = require('helpers')
 http = require('http_client')
 
 -- settings
 WIFI_MAX_RETRY = 100
+TEMP_DISABLE = 55
+TEMP_ENABLE = 60
+
+PUMP_ON = gpio.LOW
+PUMP_OFF = gpio.HIGH
 
 data = {}
 ip_addr = nil
@@ -11,43 +15,54 @@ wifi_attempt = 1 -- Counter of trys to connect to wifi
 iteration = 0
 
 sensors = {
+    temp = 0,
+    pump = PUMP_ON
 }
 
 function setup()
---    sensors.ds = require('ds18b20')
---    sensors.ds.setup(config.ds_pin)
+    sensors.ds = require('ds18b20')
+    sensors.ds.setup(config.ds_pin)
+    gpio.mode(config.pump_pin, gpio.OUTPUT)
 end
 
 function loop()
     data['field1'] = node.heap()
     data['field2'] = tmr.time() -- uptime
-    data['field3'] = helpers.round(math.random(60*100, 90*100)/100, 2)
-    data['field4'] = math.random(0, 1)
+    -- TODO: replace with real reading
+    -- sensors.temp = helpers.round(math.random(40*100, 70*100)/100, 2)
+    sensors.temp = sensors.ds.read();
+    print('DS temperature: ', sensors.temp)
+    if (sensors.temp < TEMP_DISABLE) then
+        sensors.pump = PUMP_OFF
+    end
+    if (sensors.temp >= TEMP_ENABLE) then
+        sensors.pump = PUMP_ON
+    end
+    gpio.write(config.pump_pin, sensors.pump)
+    data['field3'] = sensors.temp
+    data['field4'] = sensors.pump == PUMP_ON and 1 or 0
     print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'])
 
     -- At this point, data table should be ready to be sent
     http.get(config.ts_address, config.ts_port, config.ts_url, data, function(status, data, message)
         if (data ~= '') then
             print(iteration, status, message)
-            if (type(data) == 'string') then
-                print('data size: ', string.len(data))
-            else
-                print('data: nil')
-            end
         else
             print("Empty response!")
         end
     end)
     iteration = iteration+1
+--    collectgarbage("collect")
 end
 
 -- Change the code of this function that it calls your code.
 function launch()
     print('Connected to WIFI!')
     print('IP Address: ' .. wifi.sta.getip())
+    -- Call setup
+    setup()
     -- Set globals
-    data['node'] = node_name
-    data['api_key'] = config.api_key
+    data['api_key'] = config.ts_api_key
     -- Call the prog in a loop
     print('Start sending data, interval (s):' .. config.loop_time)
     -- First run
