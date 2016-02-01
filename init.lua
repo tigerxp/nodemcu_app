@@ -1,4 +1,5 @@
 -- Globals
+config_file = 'config_bmp'
 config = {}
 node_name = 'node_' .. node.chipid()
 
@@ -12,8 +13,8 @@ function file_exists(name)
 end
 
 function start()
-    if (file_exists('config.lua')) then
-        config = require('config')
+    if (file_exists(config_file .. '.lua')) then
+        config = require(config_file)
         dofile('client.lua')
     else
         dofile('server.lua')

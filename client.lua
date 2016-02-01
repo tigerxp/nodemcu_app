@@ -3,13 +3,11 @@ http = require('http_client')
 
 -- settings
 WIFI_MAX_RETRY = 100
-TEMP_DISABLE = 55
-TEMP_ENABLE = 60
 LOOP_TIMER = 2
 WIFI_TIMER = 0
 
-PUMP_ON = gpio.LOW
-PUMP_OFF = gpio.HIGH
+SDA_PIN = 2
+SCL_PIN = 4
 
 data = {}
 ip_addr = nil
@@ -19,29 +17,22 @@ iteration = 0
 
 sensors = {
     temp = 0,
-    pump = PUMP_ON
+    pressure = 0
 }
 
 function setup()
-    sensors.ds = require('ds18b20')
-    sensors.ds.setup(config.ds_pin)
-    gpio.mode(config.pump_pin, gpio.OUTPUT)
+    bmp085.init(SDA_PIN, SCL_PIN)
 end
 
 function loop()
     data['field1'] = node.heap()
     data['field2'] = tmr.time() -- uptime
-    -- Read DS1820
-    sensors.temp = sensors.ds.read();
-    if (sensors.temp < TEMP_DISABLE) then
-        sensors.pump = PUMP_OFF
-    end
-    if (sensors.temp >= TEMP_ENABLE) then
-        sensors.pump = PUMP_ON
-    end
-    gpio.write(config.pump_pin, sensors.pump)
+    -- Read BMP180
+    sensors.temp = bmp085.temperature() / 10
+    sensors.pressure = bmp085.pressure() / 100
+
     data['field3'] = sensors.temp
-    data['field4'] = sensors.pump == PUMP_ON and 1 or 0
+    data['field4'] = sensors.pressure
     print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'])
 
     -- At this point, data table should be ready to be sent
