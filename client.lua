@@ -8,8 +8,8 @@ TEMP_ENABLE = 60
 LOOP_TIMER = 2
 WIFI_TIMER = 0
 
-PUMP_ON = gpio.LOW
-PUMP_OFF = gpio.HIGH
+RELAY_ON = gpio.LOW
+RELAY_OFF = gpio.HIGH
 
 data = {}
 ip_addr = nil
@@ -19,13 +19,13 @@ iteration = 0
 
 sensors = {
     temp = 0,
-    pump = PUMP_ON
+    relay = RELAY_ON
 }
 
 function setup()
     sensors.ds = require('ds18b20')
     sensors.ds.setup(config.ds_pin)
-    gpio.mode(config.pump_pin, gpio.OUTPUT)
+    gpio.mode(config.relay_pin, gpio.OUTPUT)
 end
 
 function loop()
@@ -33,15 +33,23 @@ function loop()
     data['field2'] = tmr.time() -- uptime
     -- Read DS1820
     sensors.temp = sensors.ds.read();
-    if (sensors.temp < TEMP_DISABLE) then
-        sensors.pump = PUMP_OFF
+    -- Update relay
+    if (sensors.temp ~= nil) then
+        if (sensors.temp < TEMP_DISABLE) then
+            sensors.relay = RELAY_OFF
+        end
+        if (sensors.temp >= TEMP_ENABLE) then
+            sensors.relay = RELAY_ON
+        end
+    else
+        sensors.temp = 0.05
+        sensors.relay = RELAY_ON
     end
-    if (sensors.temp >= TEMP_ENABLE) then
-        sensors.pump = PUMP_ON
-    end
-    gpio.write(config.pump_pin, sensors.pump)
+    gpio.write(config.relay_pin, sensors.relay)
+
+    -- Prepare data for ThingSpeak
     data['field3'] = sensors.temp
-    data['field4'] = sensors.pump == PUMP_ON and 1 or 0
+    data['field4'] = sensors.relay == RELAY_ON and 1 or 0
     print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'])
 
     -- At this point, data table should be ready to be sent
