@@ -26,8 +26,6 @@ function setup()
     sensors.ds = require('ds18b20')
     sensors.ds.setup(config.ds_pin)
     sensors.ds_addrs = sensors.ds.addrs()
-    print('DS addresses:')
-    helpers.dump_table(sensors.ds_addrs)
     gpio.mode(config.relay_pin, gpio.OUTPUT)
 end
 
@@ -44,7 +42,21 @@ function loop()
         sensors.temp2 = 0
     end
 
---    sensors.temp2 = sensors.temp1 -- sensors.ds.read();
+    -- Read DHT
+    local status, temp, humi, temp_dec, humi_dec = dht.read(config.dht_pin)
+    sensors.dht_temp = 0
+    sensors.dht_humi = 0
+    if status == dht.OK then
+        print("DHT Temperature:"..temp..";".."Humidity:"..humi)
+        sensors.dht_temp = temp
+        sensors.dht_humi = humi
+    elseif status == dht.ERROR_CHECKSUM then
+        print( "DHT Checksum error." )
+    elseif status == dht.ERROR_TIMEOUT then
+        print( "DHT timed out." )
+    end
+
+    -- Update relay
     if (sensors.temp2 < TEMP_DISABLE) then
         sensors.pump = PUMP_OFF
     end
@@ -56,10 +68,12 @@ function loop()
     data['field1'] = sensors.temp1
     data['field2'] = sensors.temp2
     data['field3'] = sensors.pump == PUMP_ON and 1 or 0
-    data['field4'] = node.heap()
-    data['field5'] = tmr.time() -- uptime
+    data['field4'] = sensors.dht_temp
+    data['field5'] = sensors.dht_humi
+    data['field6'] = node.heap()
+    data['field7'] = tmr.time() -- uptime
 
-    print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'], data['field5'])
+    print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'], data['field5'], data['field6'], data['field7'])
 
     -- At this point, data table should be ready to be sent
     if (wifi_connected) then
