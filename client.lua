@@ -25,24 +25,41 @@ sensors = {
 function setup()
     sensors.ds = require('ds18b20')
     sensors.ds.setup(config.ds_pin)
-    gpio.mode(config.pump_pin, gpio.OUTPUT)
+    sensors.ds_addrs = sensors.ds.addrs()
+    print('DS addresses:')
+    helpers.dump_table(sensors.ds_addrs)
+    gpio.mode(config.relay_pin, gpio.OUTPUT)
 end
 
 function loop()
-    data['field1'] = node.heap()
-    data['field2'] = tmr.time() -- uptime
     -- Read DS1820
-    sensors.temp = sensors.ds.read();
-    if (sensors.temp < TEMP_DISABLE) then
+    if (sensors.ds_addrs[1] ~= nil) then
+        sensors.temp1 = sensors.ds.read(sensors.ds_addrs[1]);
+    else
+        sensors.temp1 = 0
+    end
+    if (sensors.ds_addrs[2] ~= nil) then
+        sensors.temp2 = sensors.ds.read(sensors.ds_addrs[2]);
+    else
+        sensors.temp2 = 0
+    end
+
+--    sensors.temp2 = sensors.temp1 -- sensors.ds.read();
+    if (sensors.temp2 < TEMP_DISABLE) then
         sensors.pump = PUMP_OFF
     end
-    if (sensors.temp >= TEMP_ENABLE) then
+    if (sensors.temp2 >= TEMP_ENABLE) then
         sensors.pump = PUMP_ON
     end
-    gpio.write(config.pump_pin, sensors.pump)
-    data['field3'] = sensors.temp
-    data['field4'] = sensors.pump == PUMP_ON and 1 or 0
-    print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'])
+    gpio.write(config.relay_pin, sensors.pump)
+
+    data['field1'] = sensors.temp1
+    data['field2'] = sensors.temp2
+    data['field3'] = sensors.pump == PUMP_ON and 1 or 0
+    data['field4'] = node.heap()
+    data['field5'] = tmr.time() -- uptime
+
+    print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'], data['field5'])
 
     -- At this point, data table should be ready to be sent
     if (wifi_connected) then
