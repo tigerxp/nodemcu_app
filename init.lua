@@ -1,5 +1,5 @@
 -- Globals
-config_file = 'config_bmp'
+config_file = 'config'
 config = {}
 node_name = 'node_' .. node.chipid()
 

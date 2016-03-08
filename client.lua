@@ -6,9 +6,6 @@ WIFI_MAX_RETRY = 100
 LOOP_TIMER = 2
 WIFI_TIMER = 0
 
-SDA_PIN = 2
-SCL_PIN = 4
-
 data = {}
 ip_addr = nil
 wifi_attempt = 1 -- Counter of trys to connect to wifi
@@ -21,18 +18,18 @@ sensors = {
 }
 
 function setup()
-    bmp085.init(SDA_PIN, SCL_PIN)
+    bmp085.init(config.sda_pin, config.scl_pin)
 end
 
 function loop()
-    data['field1'] = node.heap()
-    data['field2'] = tmr.time() -- uptime
+    data['field3'] = node.heap()
+    data['field4'] = tmr.time() -- uptime
     -- Read BMP180
     sensors.temp = bmp085.temperature() / 10
-    sensors.pressure = bmp085.pressure() / 100
+    sensors.pressure = helpers.round(bmp085.pressure() * 0.00750061683, 2)
 
-    data['field3'] = sensors.temp
-    data['field4'] = sensors.pressure
+    data['field1'] = sensors.temp
+    data['field2'] = sensors.pressure
     print("Data: ", data['field1'], data['field2'], data['field3'], data['field4'])
 
     -- At this point, data table should be ready to be sent
